@@ -5,7 +5,7 @@
  * Used on [[Wikipedia:Articles for creation/Submitting]].
  * Loaded via [[mw:Snippets/Load JS and CSS by URL]].
  *
- * Edits can be proposed via GitHub (https://github.com/wikimedia-gadgets/afc-submit-wizvalidation-notitleard)
+ * Edits can be proposed via GitHub (https://github.com/wikimedia-gadgets/afc-submit-wizard)
  * or a talk page request.
  *
  * Author: [[User:SD0001]]
@@ -201,6 +201,9 @@ function constructUI() {
 		align: 'top'
 	});
 
+	// keep a reference to the actual Report it link in the footer
+	ui.reportLink = ui.footerLayout.$element.find('a').last();
+
 	afc.topicOptionsLoaded = getJSONPage('Wikipedia:WikiProject Articles for creation/AfC topic map.json').then(function (optionsJson) {
 		var options = [];
 		$.each(optionsJson, function (code, info) {
@@ -262,8 +265,10 @@ function constructUI() {
 
 	ui.submitButton.on('click', handleSubmit);
 	ui.titleInput.on('change', mw.util.debounce(config.debounceDelay, onDraftInputChange));
+	ui.titleInput.on('change', updateReportLink);
 
 	if (mw.util.getParamValue('page')) {
+		updateReportLink();
 		onDraftInputChange();
 	}
 
@@ -804,6 +809,28 @@ function getJSONPage (page) {
 	}).catch(function (code, err) {
 		console.error(makeErrorMessage(code, err));
 	});
+}
+
+/**
+ * Update the existing Report it link in-place.
+ * Default: generic issue heading.
+ * With a draft title: include it in the preloadtitle.
+ */
+function updateReportLink() {
+	var drafttitle = ui.titleInput.getValue().trim();
+	var topic = 'Issue with submission form';
+
+	if (drafttitle) {
+		topic += ' - [[' + drafttitle + ']]';
+	}
+
+	var url = '/w/index.php?title=Wikipedia_talk:WikiProject_Articles_for_creation/Submission_wizard' +
+		'&action=edit&section=new&preloadtitle=' + encodeURIComponent(topic) +
+		'&editintro=Wikipedia_talk:WikiProject_Articles_for_creation/Submission_wizard/editintro';
+
+	if (ui.reportLink) {
+		ui.reportLink.attr('href', url);
+	}
 }
 
 /**
